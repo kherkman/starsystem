@@ -16,15 +16,23 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 380px;
+            width: 420px;
             max-height: 95vh;
             overflow-y: auto;
-            background-color: rgba(0, 0, 20, 0.8);
+            background-color: rgba(0, 0, 20, 0.85);
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: 1px solid rgba(255, 255, 255, 0.2);
             z-index: 10;
+        }
+        #toggle-controls-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 11;
+            width: auto;
+            padding: 5px 10px;
         }
         h1, h2 {
             text-align: center;
@@ -32,7 +40,7 @@
             margin-top: 0;
             margin-bottom: 10px;
         }
-        h2 { font-size: 1.1em; margin-top: 15px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        h2 { font-size: 1.1em; margin-top: 15px; border-bottom: 1px solid #444; padding-bottom: 5px; cursor: pointer; }
         .property {
             display: flex;
             justify-content: space-between;
@@ -51,28 +59,33 @@
         input[type="range"] {
             width: 100%;
         }
-         #instructions {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            color: #888;
-            font-size: 0.9em;
-            z-index: 5;
-        }
-        .explanation {
+        .formula-display, .explanation {
             background-color: rgba(0,0,0,0.3);
             padding: 10px;
             border-radius: 5px;
             margin-top: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            display: none;
+        }
+        .details-container {
+             display: none;
+        }
+        .explanation {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
              color: #ccc;
              line-height: 1.4;
+             display: block;
+        }
+        .formula-display .value {
+            color: #89f7fe;
+            font-weight: bold;
         }
         button {
             width: 100%;
             padding: 10px;
-            margin-top: 20px;
+            margin-top: 10px;
             background-color: #03a9f4;
             border: none;
             color: white;
@@ -80,8 +93,16 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #object3-controls {
-             display: none; /* Hidden by default */
+        .top-button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        #object3-controls, #object4-controls {
+             display: none;
+        }
+        #add-remove-4 {
+             display: none;
         }
         .sub-slider-container {
             display: flex;
@@ -98,71 +119,130 @@
 </head>
 <body>
 
+    <button id="toggle-controls-button">Hide Controls</button>
     <div id="info-panel">
         <h1>Gravity Simulator</h1>
 
         <div class="slider-container">
             <label for="sim-speed-slider">Simulation Speed <span id="sim-speed-value" class="slider-value"></span></label>
-            <input type="range" min="1" max="1000" value="100" id="sim-speed-slider">
+            <input type="range" min="1" max="4000" value="10" id="sim-speed-slider">
+        </div>
+        <div class="top-button-group">
+            <button id="toggle-camera">Toggle Camera View</button>
+            <button id="reset-button">Reset Simulation</button>
         </div>
         <hr style="border-color: #444; margin-top: 20px;">
-        <div class="property"><span class="property-label">Dist(1-2):</span><span id="dist-12" class="property-value"></span></div>
-        <div class="property"><span class="property-label">Dist(1-3):</span><span id="dist-13" class="property-value"></span></div>
-        <div class="property"><span class="property-label">Dist(2-3):</span><span id="dist-23" class="property-value"></span></div>
+        <div class="property"><span class="property-label">Camera View:</span><span id="camera-view-status" class="property-value"></span></div>
         <div class="property"><span class="property-label">System Status:</span><span id="status" class="property-value"></span></div>
         
-        <h2>Object 1</h2>
-        <div class="slider-container">
-            <label for="mass-slider-1">Mass (Solar) <span id="mass1-slider-value" class="slider-value"></span></label>
-            <input type="range" min="0" max="1000" value="566" id="mass-slider-1">
+        <h2 onclick="toggleDetails('gravity-formulas')">Gravity Calculation</h2>
+        <div class="formula-display" id="gravity-formulas">
+            <div id="force-formula-12"></div>
+            <div id="force-formula-13"></div>
+            <div id="force-formula-14"></div>
+            <div id="force-formula-23"></div>
+            <div id="force-formula-24"></div>
+            <div id="force-formula-34"></div>
         </div>
-        <div class="property"><span class="property-label">Type:</span><span id="type-1" class="property-value"></span></div>
-        <div class="property"><span class="property-label">Speed:</span><span id="speed-1" class="property-value"></span></div>
 
-        <h2>Object 2</h2>
-        <div class="slider-container">
-            <label for="mass-slider-2">Mass (Solar) <span id="mass2-slider-value" class="slider-value"></span></label>
-            <input type="range" min="0" max="1000" value="0" id="mass-slider-2">
+        <h2 onclick="toggleDetails('kinematics-formulas')">Kinematics</h2>
+        <div class="formula-display" id="kinematics-formulas">
+            <div id="kinematics-1"></div>
+            <div id="kinematics-2"></div>
+            <div id="kinematics-3"></div>
+            <div id="kinematics-4"></div>
+        </div>
+
+        <!-- Object 1 -->
+        <h2 onclick="toggleDetails('details-1')">Object 1</h2>
+        <div class="details-container" id="details-1">
+            <div class="slider-container">
+                <label for="mass-slider-1">Mass (Solar) <span id="mass1-slider-value" class="slider-value"></span></label>
+                <input type="range" min="0" max="1000" value="566" id="mass-slider-1">
+            </div>
+            <div class="slider-container">
+                 <label for="rot-slider-1">Rotation Speed <span id="rot1-slider-value" class="slider-value"></span></label>
+                <input type="range" min="0" max="100" value="5" id="rot-slider-1">
+            </div>
+            <div class="property"><span class="property-label">Type:</span><span id="type-1" class="property-value"></span></div>
+        </div>
+
+        <!-- Object 2 -->
+        <h2 onclick="toggleDetails('details-2')">Object 2</h2>
+        <div class="details-container" id="details-2">
+            <div class="slider-container">
+                <label for="mass-slider-2">Mass (Solar) <span id="mass2-slider-value" class="slider-value"></span></label>
+                <input type="range" min="0" max="1000" value="0" id="mass-slider-2">
+            </div>
+            <div class="slider-container">
+                 <label for="rot-slider-2">Rotation Speed <span id="rot2-slider-value" class="slider-value"></span></label>
+                <input type="range" min="0" max="100" value="20" id="rot-slider-2">
+            </div>
             <label>Initial Position (AU)</label>
             <div class="sub-slider-container"><label for="pos-x-2">X:</label><input type="range" min="-100" max="100" value="52" id="pos-x-2"></div>
             <div class="sub-slider-container"><label for="pos-y-2">Y:</label><input type="range" min="-100" max="100" value="0" id="pos-y-2"></div>
             <div class="sub-slider-container"><label for="pos-z-2">Z:</label><input type="range" min="-100" max="100" value="0" id="pos-z-2"></div>
-            <label>Initial Velocity (AU/day)</label>
+            <label>Initial Velocity (x10⁻⁴ AU/day)</label>
             <div class="sub-slider-container"><label for="vel-x-2">Vx:</label><input type="range" min="-100" max="100" value="0" id="vel-x-2"></div>
             <div class="sub-slider-container"><label for="vel-y-2">Vy:</label><input type="range" min="-100" max="100" value="0" id="vel-y-2"></div>
-            <div class="sub-slider-container"><label for="vel-z-2">Vz:</label><input type="range" min="-100" max="100" value="15" id="vel-z-2"></div>
+            <div class="sub-slider-container"><label for="vel-z-2">Vz:</label><input type="range" min="-100" max="100" value="75" id="vel-z-2"></div>
+            <div class="property"><span class="property-label">Type:</span><span id="type-2" class="property-value"></span></div>
         </div>
-        <div class="property"><span class="property-label">Type:</span><span id="type-2" class="property-value"></span></div>
-        <div class="property"><span class="property-label">Speed:</span><span id="speed-2" class="property-value"></span></div>
 
+        <!-- Object 3 -->
         <div id="object3-controls">
-            <h2>Object 3</h2>
-            <div class="slider-container">
-                <label for="mass-slider-3">Mass (Solar) <span id="mass3-slider-value" class="slider-value"></span></label>
-                <input type="range" min="0" max="1000" value="300" id="mass-slider-3">
+            <h2 onclick="toggleDetails('details-3')">Object 3</h2>
+            <div class="details-container" id="details-3">
+                <div class="slider-container">
+                    <label for="mass-slider-3">Mass (Solar) <span id="mass3-slider-value" class="slider-value"></span></label>
+                    <input type="range" min="0" max="1000" value="300" id="mass-slider-3">
+                </div>
+                 <div class="slider-container">
+                    <label for="rot-slider-3">Rotation Speed <span id="rot3-slider-value" class="slider-value"></span></label>
+                    <input type="range" min="0" max="100" value="10" id="rot-slider-3">
+                </div>
                 <label>Initial Position (AU)</label>
-                <div class="sub-slider-container"><label for="pos-x-3">X:</label><input type="range" min="-100" max="100" value="0" id="pos-x-3"></div>
-                <div class="sub-slider-container"><label for="pos-y-3">Y:</label><input type="range" min="-100" max="100" value="100" id="pos-y-3"></div>
+                <div class="sub-slider-container"><label for="pos-x-3">X:</label><input type="range" min="-100" max="100" value="-60" id="pos-x-3"></div>
+                <div class="sub-slider-container"><label for="pos-y-3">Y:</label><input type="range" min="-100" max="100" value="0" id="pos-y-3"></div>
                 <div class="sub-slider-container"><label for="pos-z-3">Z:</label><input type="range" min="-100" max="100" value="0" id="pos-z-3"></div>
-                <label>Initial Velocity (AU/day)</label>
-                <div class="sub-slider-container"><label for="vel-x-3">Vx:</label><input type="range" min="-100" max="100" value="-10" id="vel-x-3"></div>
+                <label>Initial Velocity (x10⁻⁴ AU/day)</label>
+                <div class="sub-slider-container"><label for="vel-x-3">Vx:</label><input type="range" min="-100" max="100" value="0" id="vel-x-3"></div>
                 <div class="sub-slider-container"><label for="vel-y-3">Vy:</label><input type="range" min="-100" max="100" value="0" id="vel-y-3"></div>
-                <div class="sub-slider-container"><label for="vel-z-3">Vz:</label><input type="range" min="-100" max="100" value="0" id="vel-z-3"></div>
+                <div class="sub-slider-container"><label for="vel-z-3">Vz:</label><input type="range" min="-100" max="100" value="-65" id="vel-z-3"></div>
+                <div class="property"><span class="property-label">Type:</span><span id="type-3" class="property-value"></span></div>
             </div>
-            <div class="property"><span class="property-label">Type:</span><span id="type-3" class="property-value"></span></div>
-            <div class="property"><span class="property-label">Speed:</span><span id="speed-3" class="property-value"></span></div>
+        </div>
+
+        <!-- Object 4 -->
+        <div id="object4-controls">
+            <h2 onclick="toggleDetails('details-4')">Object 4</h2>
+            <div class="details-container" id="details-4">
+                <div class="slider-container">
+                    <label for="mass-slider-4">Mass (Solar) <span id="mass4-slider-value" class="slider-value"></span></label>
+                    <input type="range" min="0" max="1000" value="200" id="mass-slider-4">
+                </div>
+                 <div class="slider-container">
+                    <label for="rot-slider-4">Rotation Speed <span id="rot4-slider-value" class="slider-value"></span></label>
+                    <input type="range" min="0" max="100" value="30" id="rot-slider-4">
+                </div>
+                <label>Initial Position (AU)</label>
+                <div class="sub-slider-container"><label for="pos-x-4">X:</label><input type="range" min="-100" max="100" value="0" id="pos-x-4"></div>
+                <div class="sub-slider-container"><label for="pos-y-4">Y:</label><input type="range" min="-100" max="100" value="80" id="pos-y-4"></div>
+                <div class="sub-slider-container"><label for="pos-z-4">Z:</label><input type="range" min="-100" max="100" value="0" id="pos-z-4"></div>
+                <label>Initial Velocity (x10⁻⁴ AU/day)</label>
+                <div class="sub-slider-container"><label for="vel-x-4">Vx:</label><input type="range" min="-100" max="100" value="50" id="vel-x-4"></div>
+                <div class="sub-slider-container"><label for="vel-y-4">Vy:</label><input type="range" min="-100" max="100" value="0" id="vel-y-4"></div>
+                <div class="sub-slider-container"><label for="vel-z-4">Vz:</label><input type="range" min="-100" max="100" value="0" id="vel-z-4"></div>
+                <div class="property"><span class="property-label">Type:</span><span id="type-4" class="property-value"></span></div>
+            </div>
         </div>
 
         <div class="explanation">
-            <strong>AU (Astronomical Unit):</strong> A unit of measurement equal to the average distance from Earth to the Sun, about 150 million km (93 million miles). It is used for distances within solar systems.
+            <strong>AU (Astronomical Unit):</strong> An average Earth-Sun distance, about 150 million km. Used for solar system scales.
         </div>
         
         <button id="add-remove-3">Add Object 3</button>
-        <button id="reset-button">Reset Simulation</button>
-    </div>
-
-    <div id="instructions">
-        Click and Drag to Rotate | Mouse Wheel to Zoom
+        <button id="add-remove-4">Add Object 4</button>
     </div>
 
     <script type="importmap">
@@ -179,53 +259,60 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         let scene, camera, renderer, controls;
-
-        const simSpeedSlider = document.getElementById('sim-speed-slider');
-        const resetButton = document.getElementById('reset-button');
-        const addRemove3Button = document.getElementById('add-remove-3');
-        const object3Controls = document.getElementById('object3-controls');
-        
-        const uiMap = {
-            sliders: [
-                document.getElementById('mass-slider-1'),
-                document.getElementById('mass-slider-2'),
-                document.getElementById('mass-slider-3')
-            ],
-            massValues: [
-                document.getElementById('mass1-slider-value'),
-                document.getElementById('mass2-slider-value'),
-                document.getElementById('mass3-slider-value')
-            ],
-            types: [document.getElementById('type-1'), document.getElementById('type-2'), document.getElementById('type-3')],
-            speeds: [document.getElementById('speed-1'), document.getElementById('speed-2'), document.getElementById('speed-3')],
-            pos: [
-                null, // Obj 1 is fixed
-                { x: document.getElementById('pos-x-2'), y: document.getElementById('pos-y-2'), z: document.getElementById('pos-z-2') },
-                { x: document.getElementById('pos-x-3'), y: document.getElementById('pos-y-3'), z: document.getElementById('pos-z-3') }
-            ],
-            vel: [
-                null, // Obj 1 is fixed
-                { x: document.getElementById('vel-x-2'), y: document.getElementById('vel-y-2'), z: document.getElementById('vel-z-2') },
-                { x: document.getElementById('vel-x-3'), y: document.getElementById('vel-y-3'), z: document.getElementById('vel-z-3') }
-            ]
-        };
-
-        const simSpeedValue = document.getElementById('sim-speed-value');
-        
-        const dist12El = document.getElementById('dist-12');
-        const dist13El = document.getElementById('dist-13');
-        const dist23El = document.getElementById('dist-23');
-        const statusEl = document.getElementById('status');
-        
-        const G = 2.959e-4;
-        const BASE_TIME_STEP = 2.0;
-        let timeStepMultiplier = 1.0;
         let objects = [];
+        let cameraMode = 0;
+        let timeStepMultiplier = 1.0;
+
+        const G = 2.959e-4;
+        const BASE_TIME_STEP = 200.0;
+        
+        let simSpeedSlider, resetButton, addRemove3Button, addRemove4Button, toggleCameraButton, object3Controls, object4Controls, toggleControlsButton, infoPanel;
+        let simSpeedValue, statusEl, cameraViewStatusEl;
+        let forceFormulaEls;
+        let uiMap;
+
+        window.toggleDetails = function(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
 
         init();
-        setupSimulation();
-
+        
         function init() {
+            infoPanel = document.getElementById('info-panel');
+            toggleControlsButton = document.getElementById('toggle-controls-button');
+            simSpeedSlider = document.getElementById('sim-speed-slider');
+            simSpeedValue = document.getElementById('sim-speed-value');
+            resetButton = document.getElementById('reset-button');
+            addRemove3Button = document.getElementById('add-remove-3');
+            addRemove4Button = document.getElementById('add-remove-4');
+            toggleCameraButton = document.getElementById('toggle-camera');
+            object3Controls = document.getElementById('object3-controls');
+            object4Controls = document.getElementById('object4-controls');
+            statusEl = document.getElementById('status');
+            cameraViewStatusEl = document.getElementById('camera-view-status');
+            
+            forceFormulaEls = {
+                '12': document.getElementById('force-formula-12'), '13': document.getElementById('force-formula-13'),
+                '14': document.getElementById('force-formula-14'), '23': document.getElementById('force-formula-23'),
+                '24': document.getElementById('force-formula-24'), '34': document.getElementById('force-formula-34')
+            };
+
+            uiMap = {
+                sliders: {
+                    mass: [document.getElementById('mass-slider-1'), document.getElementById('mass-slider-2'), document.getElementById('mass-slider-3'), document.getElementById('mass-slider-4')],
+                    rot: [document.getElementById('rot-slider-1'), document.getElementById('rot-slider-2'), document.getElementById('rot-slider-3'), document.getElementById('rot-slider-4')],
+                },
+                values: {
+                    mass: [document.getElementById('mass1-slider-value'), document.getElementById('mass2-slider-value'), document.getElementById('mass3-slider-value'), document.getElementById('mass4-slider-value')],
+                    rot: [document.getElementById('rot1-slider-value'), document.getElementById('rot2-slider-value'), document.getElementById('rot3-slider-value'), document.getElementById('rot4-slider-value')],
+                },
+                types: [document.getElementById('type-1'), document.getElementById('type-2'), document.getElementById('type-3'), document.getElementById('type-4')],
+                pos: [ null, { x: document.getElementById('pos-x-2'), y: document.getElementById('pos-y-2'), z: document.getElementById('pos-z-2') }, { x: document.getElementById('pos-x-3'), y: document.getElementById('pos-y-3'), z: document.getElementById('pos-z-3') }, { x: document.getElementById('pos-x-4'), y: document.getElementById('pos-y-4'), z: document.getElementById('pos-z-4') } ],
+                vel: [ null, { x: document.getElementById('vel-x-2'), y: document.getElementById('vel-y-2'), z: document.getElementById('vel-z-2') }, { x: document.getElementById('vel-x-3'), y: document.getElementById('vel-y-3'), z: document.getElementById('vel-z-3') }, { x: document.getElementById('vel-x-4'), y: document.getElementById('vel-y-4'), z: document.getElementById('vel-z-4') } ],
+                kinematics: [document.getElementById('kinematics-1'), document.getElementById('kinematics-2'), document.getElementById('kinematics-3'), document.getElementById('kinematics-4')]
+            };
+            
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x00000a, 0.002);
 
@@ -235,15 +322,10 @@
             document.body.appendChild(renderer.domElement);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-            camera.position.set(0, 20, 50);
+            camera.position.set(0, 1.5, 12);
 
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 1;
-            controls.maxDistance = 2000;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.1;
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
             scene.add(ambientLight);
@@ -251,6 +333,9 @@
             window.addEventListener('resize', onWindowResize);
             resetButton.addEventListener('click', setupSimulation);
             addRemove3Button.addEventListener('click', toggleObject3);
+            addRemove4Button.addEventListener('click', toggleObject4);
+            toggleCameraButton.addEventListener('click', cycleCamera);
+            toggleControlsButton.addEventListener('click', toggleControlsPanel);
             
             const notifyReset = () => { statusEl.textContent = "Settings Changed. Reset."; };
             
@@ -259,43 +344,93 @@
                 simSpeedValue.textContent = `${(timeStepMultiplier * 100).toFixed(0)}%`;
             });
 
-            // Add listeners for all sliders
             document.querySelectorAll('input[type="range"]').forEach(slider => {
                 slider.addEventListener('input', notifyReset);
             });
-            uiMap.sliders.forEach((slider, i) => {
-                slider.addEventListener('input', () => updateObjectProperties(false));
+            uiMap.sliders.mass.forEach((slider, i) => {
+                if(slider) slider.addEventListener('input', () => updateObjectProperties(false));
+            });
+            uiMap.sliders.rot.forEach((slider, i) => {
+                 if(slider) slider.addEventListener('input', () => {
+                     if (objects[i]) objects[i].rotSpeed = parseFloat(slider.value) * 0.001;
+                     uiMap.values.rot[i].textContent = slider.value;
+                 });
             });
             
+            setupSimulation();
             animate();
         }
 
-        function createObjectData() { return { mesh: null, velocity: new THREE.Vector3(), mass: 1.0, radius: 1.0 }; }
+        function toggleControlsPanel() {
+            const isVisible = infoPanel.style.display !== 'none';
+            infoPanel.style.display = isVisible ? 'none' : 'block';
+            toggleControlsButton.textContent = isVisible ? 'Show Controls' : 'Hide Controls';
+        }
+
+        function createObjectData() { return { mesh: null, velocity: new THREE.Vector3(), mass: 1.0, radius: 1.0, rotSpeed: 0.005 }; }
 
         function toggleObject3() {
             if (objects.length === 2) {
                 objects.push(createObjectData());
                 object3Controls.style.display = 'block';
                 addRemove3Button.textContent = 'Remove Object 3';
+                addRemove4Button.style.display = 'block';
             } else {
+                if (objects.length === 4) toggleObject4();
                 if (objects[2] && objects[2].mesh) scene.remove(objects[2].mesh);
                 objects.pop();
                 object3Controls.style.display = 'none';
                 addRemove3Button.textContent = 'Add Object 3';
+                addRemove4Button.style.display = 'none';
             }
             setupSimulation();
         }
 
+        function toggleObject4() {
+             if (objects.length === 3) {
+                objects.push(createObjectData());
+                object4Controls.style.display = 'block';
+                addRemove4Button.textContent = 'Remove Object 4';
+            } else {
+                if (objects[3] && objects[3].mesh) scene.remove(objects[3].mesh);
+                objects.pop();
+                object4Controls.style.display = 'none';
+                addRemove4Button.textContent = 'Add Object 4';
+            }
+            setupSimulation();
+        }
+        
+        function cycleCamera() {
+            const maxModes = 1 + (objects.length * 2);
+            cameraMode = (cameraMode + 1) % maxModes;
+            updateCameraStatus();
+        }
+
+        function updateCameraStatus() {
+            if (cameraMode === 0) {
+                cameraViewStatusEl.textContent = 'Free Orbit';
+                controls.enabled = true;
+            } else {
+                const objectIndex = Math.floor((cameraMode - 1) / 2);
+                const isOrbitMode = (cameraMode - 1) % 2 === 0;
+                if (isOrbitMode) {
+                    cameraViewStatusEl.textContent = `Orbiting Object ${objectIndex + 1}`;
+                    controls.enabled = true;
+                } else {
+                    cameraViewStatusEl.textContent = `Object ${objectIndex + 1} POV`;
+                    controls.enabled = false;
+                }
+            }
+        }
+        
         function setupSimulation() {
             objects.forEach(obj => { if (obj.mesh) scene.remove(obj.mesh); });
             if (objects.length === 0) { objects.push(createObjectData(), createObjectData()); }
             updateObjectProperties(true);
             
-            // Object 1 is fixed at the center
             objects[0].mesh.position.set(0, 0, 0);
             objects[0].velocity.set(0, 0, 0);
 
-            // Setup objects 2 and 3 from their sliders
             const velScale = 0.0001;
             for(let i=1; i<objects.length; i++) {
                 objects[i].mesh.position.set(
@@ -310,7 +445,6 @@
                 );
             }
             
-            // Check for initial collisions
             for(let i = 0; i < objects.length; i++) {
                 for(let j = i + 1; j < objects.length; j++) {
                     if(objects[i].mesh.position.distanceTo(objects[j].mesh.position) < objects[i].radius + objects[j].radius) {
@@ -322,10 +456,13 @@
 
             timeStepMultiplier = simSpeedSlider.value / 100;
             simSpeedValue.textContent = `${(timeStepMultiplier * 100).toFixed(0)}%`;
+            cameraMode = 0;
+            updateCameraStatus();
+            controls.target.set(0,0,0);
             statusEl.textContent = "Running...";
         }
 
-        function createStar(radius, color) { /* ... same as before ... */ return new THREE.Group().add(new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), new THREE.MeshBasicMaterial({color:color})).add(new THREE.Sprite(new THREE.SpriteMaterial({map:createGlowTexture(color), transparent:true, blending:THREE.AdditiveBlending})).scale.set(radius*4,radius*4,1))); }
+        function createStar(radius, color) { /* ... same as before ... */ const g=new THREE.Group();const m=new THREE.Mesh(new THREE.SphereGeometry(radius,32,32),new THREE.MeshBasicMaterial({color:color}));g.add(m);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:createGlowTexture(color),transparent:!0,blending:THREE.AdditiveBlending}));s.scale.set(radius*4,radius*4,1);m.add(s);return g}
         function createBlackHole(radius) { /* ... same as before ... */ const g=new THREE.Group(); g.add(new THREE.Mesh(new THREE.SphereGeometry(radius,32,32), new THREE.MeshBasicMaterial({color:0}))); const d=new THREE.Mesh(new THREE.RingGeometry(radius*1.5,radius*3.5,64),new THREE.MeshBasicMaterial({map:createAccretionDiskTexture(),side:THREE.DoubleSide,transparent:!0,opacity:.9})); d.rotation.x=Math.PI/2; g.add(d); return g;}
         function createGlowTexture(color) { /* ... same as before ... */ const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(.1,'rgba(255,255,255,1)');g.addColorStop(.4,new THREE.Color(color).getStyle());g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);}
         function createAccretionDiskTexture() { /* ... same as before ... */ const c=document.createElement('canvas');c.width=256;c.height=256;const x=c.getContext('2d');const g=x.createRadialGradient(128,128,50,128,128,128);g.addColorStop(0,'#FFF');g.addColorStop(.3,'#FF0');g.addColorStop(.6,'#F80');g.addColorStop(.8,'#F00');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,256,256);return new THREE.CanvasTexture(c);}
@@ -345,8 +482,12 @@
 
         function updateObjectProperties(isReset) {
             objects.forEach((obj, i) => {
-                const mass = getMassFromSlider(uiMap.sliders[i].value);
-                uiMap.massValues[i].textContent = mass.toExponential(2);
+                const slider = uiMap.sliders.mass[i];
+                if (!slider) return;
+                const mass = getMassFromSlider(slider.value);
+                uiMap.values.mass[i].textContent = mass.toExponential(2);
+                obj.rotSpeed = parseFloat(uiMap.sliders.rot[i].value) * 0.001;
+                uiMap.values.rot[i].textContent = uiMap.sliders.rot[i].value;
                 const props = calculateObjectProperties(mass);
                 Object.assign(obj, props);
                 uiMap.types[i].textContent = props.type;
@@ -358,59 +499,96 @@
                 }
             });
         }
+        
+        function formatForce(p, i, j, force) {
+            const m1 = p[i].mass.toExponential(2);
+            const m2 = p[j].mass.toExponential(2);
+            const r = p[i].mesh.position.distanceTo(p[j].mesh.position).toFixed(1);
+            return `F<sub>${i+1},${j+1}</sub> = <span class="value">${G.toExponential(3)}</span> * 
+            (<span class="value">${m1}</span>*<span class="value">${m2}</span>) / 
+            <span class="value">${r}</span>² = <span class="value">${force.toExponential(2)}</span>`;
+        }
+
+        function formatKine(obj, timeStep) {
+            const speed = obj.velocity.length();
+            return `Speed (Obj ${obj.id}): <span class="value">${speed.toExponential(2)}</span> AU/day<br>
+            Δp ≈ v * Δt = <span class="value">${speed.toExponential(2)}</span> * <span class="value">${timeStep.toFixed(2)}</span>`;
+        }
 
         function updatePhysics() {
             if (statusEl.textContent !== "Running...") return;
 
             const timeStep = BASE_TIME_STEP * timeStepMultiplier;
             const forces = objects.map(() => new THREE.Vector3());
+            
+            Object.values(forceFormulaEls).forEach(el => el.innerHTML = '');
 
             for (let i = 0; i < objects.length; i++) {
                 for (let j = i + 1; j < objects.length; j++) {
                     const distanceVec = new THREE.Vector3().subVectors(objects[j].mesh.position, objects[i].mesh.position);
                     const distance = distanceVec.length();
                     
-                    if (distance < objects[i].radius + objects[j].radius) {
-                        statusEl.textContent = `Collision! (${i+1}-${j+1})`;
-                        return;
-                    }
-                    if (distance > 2000) { // Check for escapees
-                         statusEl.textContent = `Object ${j+1} escaped!`;
-                    }
+                    if (distance < objects[i].radius + objects[j].radius) { statusEl.textContent = `Collision! (${i+1}-${j+1})`; return; }
+                    if (distance > 2000) { statusEl.textContent = `Object ${j+1} escaped!`; }
 
                     const forceMagnitude = (G * objects[i].mass * objects[j].mass) / (distance * distance);
                     const forceVec = distanceVec.normalize().multiplyScalar(forceMagnitude);
                     forces[i].add(forceVec);
                     forces[j].sub(forceVec);
+
+                    const forceEl = forceFormulaEls[`${i+1}${j+1}`];
+                    if (forceEl) forceEl.innerHTML = formatForce(objects, i, j, forceMagnitude);
                 }
             }
             
             objects.forEach((obj, i) => {
-                const accel = forces[i].divideScalar(obj.mass);
+                const accel = forces[i].clone().divideScalar(obj.mass);
                 obj.velocity.add(accel.multiplyScalar(timeStep));
-                if(i > 0) obj.mesh.position.add(obj.velocity.clone().multiplyScalar(timeStep)); // Don't move object 1
-                uiMap.speeds[i].textContent = obj.velocity.length().toExponential(2) + " AU/day";
+                if(i > 0) obj.mesh.position.add(obj.velocity.clone().multiplyScalar(timeStep));
+                
+                if (uiMap.kinematics[i]) {
+                    obj.id = i + 1;
+                    uiMap.kinematics[i].innerHTML = formatKine(obj, timeStep);
+                }
             });
+        }
+        
+        function updateCamera() {
+             if (cameraMode === 0) { // Free Orbit
+                controls.update();
+             } else {
+                const objectIndex = Math.floor((cameraMode - 1) / 2);
+                const isOrbitMode = (cameraMode - 1) % 2 === 0;
+                
+                const targetObj = objects[objectIndex];
+                if (!targetObj || !targetObj.mesh) return;
 
-            dist12El.textContent = objects[0].mesh.position.distanceTo(objects[1].mesh.position).toFixed(1);
-            if (objects.length === 3) {
-                dist13El.parentElement.style.display = 'flex';
-                dist23El.parentElement.style.display = 'flex';
-                dist13El.textContent = objects[0].mesh.position.distanceTo(objects[2].mesh.position).toFixed(1);
-                dist23El.textContent = objects[1].mesh.position.distanceTo(objects[2].mesh.position).toFixed(1);
-            } else {
-                dist13El.parentElement.style.display = 'none';
-                dist23El.parentElement.style.display = 'none';
-            }
+                if (isOrbitMode) { // Orbiting Object
+                    controls.target.copy(targetObj.mesh.position);
+                    controls.update();
+                } else { // POV from Object
+                    const obj = targetObj.mesh;
+                    const radius = obj.children[0].geometry.parameters.radius;
+                    const offset = new THREE.Vector3(0, radius * 1.5, radius * 0.1); 
+                    offset.applyQuaternion(obj.quaternion);
+                    camera.position.copy(obj.position).add(offset);
+                    
+                    const lookAtOffset = new THREE.Vector3(0, 0, -1);
+                    lookAtOffset.applyQuaternion(obj.quaternion);
+                    const lookAtPoint = new THREE.Vector3().copy(obj.position).add(lookAtOffset);
+                    camera.lookAt(lookAtPoint);
+                }
+             }
         }
 
         function animate() {
             requestAnimationFrame(animate);
             objects.forEach(obj => {
+                if(obj.mesh) obj.mesh.rotation.y += obj.rotSpeed * timeStepMultiplier;
                 if(obj.isBlackHole && obj.mesh) obj.mesh.children[1].rotation.z += 0.02 * timeStepMultiplier;
             });
             updatePhysics();
-            controls.update();
+            updateCamera();
             renderer.render(scene, camera);
         }
 
